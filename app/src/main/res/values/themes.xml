@@ -1,0 +1,16 @@
+<resources>
+    <!-- Tema escuro Material 3; Compose vai usar as cores definidas -->
+    <style name="Theme.HANotifier" parent="Theme.Material3.Dark">
+        <!-- Paleta azul -->
+        <item name="colorPrimary">@color/blue_primary</item>
+        <item name="colorSecondary">@color/blue_secondary</item>
+
+        <!-- Barras do sistema escuras -->
+        <item name="android:statusBarColor">@color/surface_dark</item>
+        <item name="android:navigationBarColor">@color/surface_dark</item>
+
+        <!-- Como usamos Compose, podemos ocultar ActionBar padrão -->
+        <item name="windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

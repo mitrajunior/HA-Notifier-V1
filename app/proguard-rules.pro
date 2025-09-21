@@ -1,0 +1,3 @@
+-keep class com.example.hanotifier.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**

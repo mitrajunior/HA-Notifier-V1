@@ -1,0 +1,6 @@
+rest_command:
+  app_notify:
+    url: "{{ url }}" # Ex.: https://teu-reverse-proxy/send/<device_id>
+    method: POST
+    content_type: "application/json"
+    payload: "{{ payload | tojson }}"

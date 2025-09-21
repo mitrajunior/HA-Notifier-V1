@@ -1,0 +1,19 @@
+automation:
+  - alias: "Alerta crítico — Porta garagem aberta"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.porta_garagem
+        to: "on"
+        for: "00:10:00"
+    action:
+      - service: rest_command.app_notify
+        data:
+          url: "https://teu-servidor/notify"  # ou Relay
+          payload:
+            title: "Porta da Garagem"
+            body: "Aberta há 10 minutos."
+            priority: "critical"
+            popup: true
+            persistent: true
+            requireAck: true

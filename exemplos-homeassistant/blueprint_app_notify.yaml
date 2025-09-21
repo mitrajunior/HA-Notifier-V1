@@ -1,0 +1,39 @@
+blueprint:
+  name: "HA Notifier — Enviar payload"
+  description: "Envia um payload JSON para a app (REST)."
+  domain: automation
+  input:
+    url:
+      name: URL de envio
+      description: "Endpoint do relay/APP"
+      default: "https://teu-servidor/notify"
+      selector: { text: {} }
+    title: { name: Título, selector: { text: {} } }
+    body: { name: Corpo, selector: { text: {} } }
+    priority:
+      name: Prioridade
+      default: warning
+      selector: { select: { options: [info, warning, critical] } }
+    popup:
+      name: Popup (full-screen)
+      default: false
+      selector: { boolean: {} }
+    persistent:
+      name: Persistente
+      default: false
+      selector: { boolean: {} }
+
+trigger:
+  - platform: event
+    event_type: ha_notifier_trigger
+
+action:
+  - service: rest_command.app_notify
+    data:
+      url: !input url
+      payload:
+        title: !input title
+        body: !input body
+        priority: !input priority
+        popup: !input popup
+        persistent: !input persistent

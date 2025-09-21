@@ -1,0 +1,15 @@
+automation:
+  - alias: "HA Notifier — Notificação simples"
+    trigger:
+      - platform: time
+        at: "21:30:00"
+    action:
+      - service: rest_command.app_notify
+        data:
+          url: "https://teu-servidor/notify"
+          payload:
+            title: "Hora de fechar estores"
+            body: "Queres fechar agora?"
+            priority: "warning"
+            persistent: false
+            popup: false
