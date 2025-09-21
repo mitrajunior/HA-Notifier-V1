@@ -3,14 +3,31 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Quadrado azul claro -->
-    <path
-        android:fillColor="#6EA8FE"
-        android:pathData="M12,12h84v84h-84z"/>
-    <!-- Borda suave (opcional) -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#2E6BDE"
-        android:strokeWidth="2"
-        android:pathData="M12,12h84v84h-84z"/>
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.88"
+        android:scaleY="0.88"
+        android:translateX="6.48"
+        android:translateY="6.48">
+        <path
+            android:fillColor="@android:color/transparent"
+            android:pathData="M54,18 L24,42 V74 C24,81.732 30.268,88 38,88 H70 C77.732,88 84,81.732 84,74 V42 L54,18 Z"
+            android:strokeColor="#7CE1FF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="6"/>
+        <path
+            android:fillColor="@android:color/transparent"
+            android:pathData="M54,34 V52"
+            android:strokeColor="#7CE1FF"
+            android:strokeLineCap="round"
+            android:strokeWidth="6"/>
+        <path
+            android:fillColor="@android:color/transparent"
+            android:pathData="M40,62 C40,48 68,48 68,62"
+            android:strokeColor="#7CE1FF"
+            android:strokeLineCap="round"
+            android:strokeWidth="6"/>
+    </group>
 </vector>
