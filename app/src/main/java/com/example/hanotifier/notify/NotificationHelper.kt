@@ -104,25 +104,38 @@ object NotificationHelper {
         else -> CH_INFO
       }
 
+      val styledBody = payload.body?.let { MarkdownRenderer.render(ctx, it) }
+
       val builder = NotificationCompat.Builder(ctx, channel)
         .setSmallIcon(R.mipmap.ic_launcher)
         .setContentTitle(payload.title)
-        .setContentText(payload.body)
+        .apply {
+          when {
+            styledBody != null -> setContentText(styledBody)
+            !payload.body.isNullOrBlank() -> setContentText(payload.body)
+          }
+        }
         .setPriority(NotificationCompat.PRIORITY_MAX)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         .setOngoing(persistent)
         .setAutoCancel(!persistent)
         .setContentIntent(alertPI)
+        .setColor(notificationColor(ctx, priority))
+        .setColorized(priority != "info")
 
       if (imageBitmap != null) {
+        val pictureStyle = NotificationCompat.BigPictureStyle().bigPicture(imageBitmap)
+        when {
+          styledBody != null -> pictureStyle.setSummaryText(styledBody)
+          !payload.body.isNullOrBlank() -> pictureStyle.setSummaryText(payload.body)
+        }
         builder.setLargeIcon(imageBitmap)
-        builder.setStyle(
-          NotificationCompat.BigPictureStyle()
-            .bigPicture(imageBitmap)
-            .setSummaryText(payload.body)
-        )
+        builder.setStyle(pictureStyle)
       } else {
-        builder.setStyle(NotificationCompat.BigTextStyle().bigText(payload.body))
+        when {
+          styledBody != null -> builder.setStyle(NotificationCompat.BigTextStyle().bigText(styledBody))
+          !payload.body.isNullOrBlank() -> builder.setStyle(NotificationCompat.BigTextStyle().bigText(payload.body))
+        }
       }
 
       actions.forEachIndexed { index, action ->
@@ -155,6 +168,15 @@ object NotificationHelper {
       "ha_service" -> android.R.drawable.ic_media_play
       else -> android.R.drawable.ic_menu_send
     }
+  }
+
+  private fun notificationColor(ctx: Context, priority: String): Int {
+    val colorRes = when (priority) {
+      "critical" -> R.color.notification_critical
+      "warning" -> R.color.notification_warning
+      else -> R.color.notification_info
+    }
+    return ContextCompat.getColor(ctx, colorRes)
   }
 
   private suspend fun loadBitmap(ctx: Context, ref: String): Bitmap? = withContext(Dispatchers.IO) {
