@@ -1,0 +1,89 @@
+name: Android CI (APK)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_DIR: .   # muda se o módulo "app" estiver noutra pasta
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
+
+      # ---------- Cache Gradle: restore (não-fatal) ----------
+      - name: Restore Gradle cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-home-v1|${{ runner.os }}|${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-home-v1|${{ runner.os }}|
+      # Gradle sem wrapper
+      - name: Set up Gradle (sem wrapper)
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+
+      # ---------- Build Debug ----------
+      - name: Build Debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK (debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      # ---------- Build Release (opcional, assinado se houver secrets) ----------
+      - name: Build Release APK (opcional, assinado se tiveres keystore)
+        working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          STORE_FILE: ${{ secrets.STORE_FILE }}   # conteúdo base64 do keystore.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "${STORE_FILE}" ]; then
+            echo "${STORE_FILE}" | base64 -d > keystore.jks
+            # Exporta caminho para o Gradle ler (o teu build.gradle espera um caminho em STORE_FILE)
+            echo "STORE_FILE=$PWD/keystore.jks" >> $GITHUB_ENV
+          fi
+          gradle --no-daemon assembleRelease || true
+          ls -la app/build/outputs/apk/release || true
+      - name: Upload APK (release se existir)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ---------- Cache Gradle: save (não-fatal) ----------
+      - name: Save Gradle cache
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-home-v1|${{ runner.os }}|${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
