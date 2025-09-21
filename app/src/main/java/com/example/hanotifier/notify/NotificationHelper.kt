@@ -130,7 +130,7 @@ object NotificationHelper {
           !payload.body.isNullOrBlank() -> pictureStyle.setSummaryText(payload.body)
         }
         builder.setLargeIcon(imageBitmap)
-        builder.setStyle(pictureStyle)
+
       } else {
         when {
           styledBody != null -> builder.setStyle(NotificationCompat.BigTextStyle().bigText(styledBody))
