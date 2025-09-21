@@ -124,17 +124,13 @@ object NotificationHelper {
         .setColorized(priority != "info")
 
       if (imageBitmap != null) {
+        val pictureStyle = NotificationCompat.BigPictureStyle().bigPicture(imageBitmap)
+        when {
+          styledBody != null -> pictureStyle.setSummaryText(styledBody)
+          !payload.body.isNullOrBlank() -> pictureStyle.setSummaryText(payload.body)
+        }
         builder.setLargeIcon(imageBitmap)
-        builder.setStyle(
-          NotificationCompat.BigPictureStyle()
-            .bigPicture(imageBitmap)
-            .apply {
-              when {
-                styledBody != null -> setSummaryText(styledBody)
-                !payload.body.isNullOrBlank() -> setSummaryText(payload.body)
-              }
-            }
-        )
+
       } else {
         when {
           styledBody != null -> builder.setStyle(NotificationCompat.BigTextStyle().bigText(styledBody))
