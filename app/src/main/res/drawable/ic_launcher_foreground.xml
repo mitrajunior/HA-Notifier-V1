@@ -1,5 +1,16 @@
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-<item android:gravity="center">
-<bitmap android:src="@drawable/ic_launcher_foreground" android:antialias="true" android:filter="true"/>
-</item>
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Quadrado azul claro -->
+    <path
+        android:fillColor="#6EA8FE"
+        android:pathData="M12,12h84v84h-84z"/>
+    <!-- Borda suave (opcional) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#2E6BDE"
+        android:strokeWidth="2"
+        android:pathData="M12,12h84v84h-84z"/>
+</vector>
