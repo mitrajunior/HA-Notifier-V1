@@ -1,1 +1,0 @@
-// (Reservado para componentes reutilizáveis)
