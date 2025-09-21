@@ -5,4 +5,7 @@
     <color name="surface_dark">#0F1520</color>
     <color name="background_dark">#0B111A</color>
     <color name="text_on_dark">#D7E3FF</color>
+    <color name="notification_info">#4C8DFF</color>
+    <color name="notification_warning">#FFB74D</color>
+    <color name="notification_critical">#FF6659</color>
 </resources>
