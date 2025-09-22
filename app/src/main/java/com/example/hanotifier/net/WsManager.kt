@@ -2,6 +2,7 @@ package com.example.hanotifier.net
 
 import android.content.Context
 import android.util.Log
+import com.example.hanotifier.data.Action
 import com.example.hanotifier.data.Payload
 import com.example.hanotifier.notify.NotificationHelper
 import kotlin.math.min
@@ -16,7 +17,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import okhttp3.OkHttpClient
+import org.json.JSONArray
 import org.json.JSONObject
+import org.yaml.snakeyaml.LoaderOptions
+import org.yaml.snakeyaml.Yaml
 
 enum class WsState { CONNECTING, CONNECTED, DISCONNECTED }
 
@@ -31,6 +35,14 @@ object WsManager {
 
   private val _state = MutableStateFlow(WsState.DISCONNECTED)
   val state: StateFlow<WsState> get() = _state
+
+  private val yamlParser by lazy {
+    val options = LoaderOptions().apply {
+      setCodePointLimit(1_000_000)
+      setAllowDuplicateKeys(false)
+    }
+    Yaml(options)
+  }
 
   fun buildWsUrl(base: String?): String? {
     if (base.isNullOrBlank()) return null
@@ -118,10 +130,12 @@ object WsManager {
       val root = JSONObject(text)
       if (!root.optString("type").equals("event")) return
       val ev = root.getJSONObject("event")
-      val data = ev.optJSONObject("data") ?: return
+      val data = parseEventData(ev) ?: return
+      val title = data.optStringOrDefault("title", "Alerta")
+      val body = data.optStringOrDefault("body", "")
       val payload = Payload(
-        title = data.optString("title", "Alerta"),
-        body = data.optString("body", ""),
+        title = title,
+        body = body,
         priority = data.optString("priority", "info"),
         persistent = data.optBoolean("persistent", false),
         popup = data.optBoolean("popup", false),
@@ -129,15 +143,90 @@ object WsManager {
         channel = data.optString("channel", null),
         sound = data.optString("sound", null),
         vibration = data.optJSONArray("vibration")?.let { arr -> MutableList(arr.length()) { i -> arr.getLong(i) } },
-        actions = null,
+        actions = data.optJSONArray("actions")?.let { arr ->
+          val actions = mutableListOf<Action>()
+          for (i in 0 until arr.length()) {
+            val actionObj = arr.optJSONObject(i) ?: continue
+            val actionTitle = actionObj.optString("title", null) ?: continue
+            actions += Action(
+              title = actionTitle,
+              type = actionObj.optString("type", null),
+              service = actionObj.optString("service", null),
+              entity_id = actionObj.optString("entity_id", null),
+              url = actionObj.optString("url", null)
+            )
+          }
+          actions.takeIf { it.isNotEmpty() }
+        },
         image = data.optString("image", null),
         timeout_sec = data.optInt("timeout_sec", 0),
-        collapseKey = data.optString("collapse_key", (data.optString("title", "") + data.optString("body", "")).take(48)),
+        collapseKey = data.optString("collapse_key", (title + body).take(48)),
         group = data.optString("group", null)
       )
       NotificationHelper.show(ctx, payload)
     } catch (t: Throwable) {
       Log.e(TAG, "Erro a processar evento", t)
+    }
+  }
+
+  private fun parseEventData(ev: JSONObject): JSONObject? {
+    val rawData = ev.opt("data") ?: return null
+    return when (rawData) {
+      is JSONObject -> rawData
+      is String -> parseYamlToJsonObject(rawData)
+      is Map<*, *> -> mapToJsonObject(rawData)
+      else -> null
+    }
+  }
+
+  private fun parseYamlToJsonObject(raw: String): JSONObject? {
+    if (raw.isBlank()) return null
+    return runCatching {
+      when (val parsed = yamlParser.load<Any?>(raw)) {
+        null -> JSONObject()
+        is Map<*, *> -> mapToJsonObject(parsed)
+        else -> {
+          Log.w(TAG, "Estrutura YAML inesperada: ${parsed::class.java.simpleName}")
+          null
+        }
+      }
+    }.getOrElse {
+      Log.w(TAG, "Falha a parsear YAML", it)
+      null
+    }
+  }
+
+  private fun mapToJsonObject(map: Map<*, *>): JSONObject {
+    val json = JSONObject()
+    map.forEach { (key, value) ->
+      val name = key?.toString() ?: return@forEach
+      json.put(name, convertYamlValue(value))
+    }
+    return json
+  }
+
+  private fun convertYamlValue(value: Any?): Any? = when (value) {
+    null -> JSONObject.NULL
+    is JSONObject, is JSONArray -> value
+    is Map<*, *> -> mapToJsonObject(value)
+    is Iterable<*> -> JSONArray().apply { value.forEach { put(convertYamlValue(it)) } }
+    is Array<*> -> JSONArray().apply { value.forEach { put(convertYamlValue(it)) } }
+    is IntArray -> JSONArray().apply { value.forEach { put(it) } }
+    is LongArray -> JSONArray().apply { value.forEach { put(it) } }
+    is DoubleArray -> JSONArray().apply { value.forEach { put(it) } }
+    is FloatArray -> JSONArray().apply { value.forEach { put(it) } }
+    is BooleanArray -> JSONArray().apply { value.forEach { put(it) } }
+    is ShortArray -> JSONArray().apply { value.forEach { put(it) } }
+    is ByteArray -> JSONArray().apply { value.forEach { put(it.toInt()) } }
+    is Boolean, is Number, is String -> value
+    else -> value.toString()
+  }
+
+  private fun JSONObject.optStringOrDefault(key: String, defaultValue: String): String {
+    val raw = opt(key)
+    return when (raw) {
+      null, JSONObject.NULL -> defaultValue
+      else -> raw.toString()
     }
   }
 
